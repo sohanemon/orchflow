@@ -4,13 +4,13 @@
 	"description": "react orchestrator hook",
 	"type": "module",
 	"license": "MIT",
-	"homepage": "https://react-orch.vercel.app",
+	"homepage": "https://orchflow.vercel.app",
 	"bugs": {
-		"url": "https://github.com/sohanemon/react-orch/issues"
+		"url": "https://github.com/sohanemon/orchflow/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/sohanemon/react-orch.git"
+		"url": "git+https://github.com/sohanemon/orchflow.git"
 	},
 	"author": "Sohan Emon <sohanemon@outlook.com>",
 	"files": [
