@@ -7,7 +7,7 @@ import {
 	type OrchestratorConfig,
 } from "../utils/orchestrator";
 
-export function useOrchestrator(config?: OrchestratorConfig) {
+export function useOrchflow(config?: OrchestratorConfig) {
 	const [isExecuting, setIsExecuting] = React.useState(false);
 	const [report, setReport] = React.useState<ExecutionReport | null>(null);
 	const [error, setError] = React.useState<string | null>(null);
