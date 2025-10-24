@@ -21,41 +21,40 @@ export class Orchflow {
 		fn: () => Promise<void>,
 		selector?: string,
 	): Promise<void> {
-		const startTime = performance.now();
+		const timestamp = performance.now();
 
 		try {
 			if (this.config.debug) {
-				console.log(
-					`[Orchflow] Executing: ${action}${selector ? ` (${selector})` : ""}`,
+				console.info(
+					`⚡[Orchflow] Executing: ${action}${selector ? ` (${selector})` : ""}`,
 				);
 			}
 
 			await fn();
 
-			const duration = performance.now() - startTime;
+			const duration = performance.now() - timestamp;
 			if (selector)
 				this.executionSteps.push({
 					action,
 					selector,
-					timestamp: startTime,
+					timestamp,
 					duration,
 					status: "success",
 				});
 
 			if (this.config.debug) {
-				console.log(
-					`[Orchflow] ✓ ${action} completed in ${duration.toFixed(2)}ms`,
+				console.info(
+					`⚡[Orchflow] ✓ ${action} completed in ${duration.toFixed(2)}ms`,
 				);
 			}
 
-			// Delay between actions
 			if (this.config.delayBetweenActions) {
 				await new Promise((resolve) =>
 					setTimeout(resolve, this.config.delayBetweenActions),
 				);
 			}
 		} catch (error) {
-			const duration = performance.now() - startTime;
+			const duration = performance.now() - timestamp;
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
 
@@ -63,14 +62,14 @@ export class Orchflow {
 				this.executionSteps.push({
 					action,
 					selector,
-					timestamp: startTime,
+					timestamp,
 					duration,
 					status: "error",
 					error: errorMessage,
 				});
 
 			if (this.config.debug) {
-				console.error(`[Orchflow] ✗ ${action} failed: ${errorMessage}`);
+				console.error(`⚡[Orchflow] ✗ ${action} failed: ${errorMessage}`);
 			}
 
 			throw error;
@@ -82,7 +81,7 @@ export class Orchflow {
 		timeoutMs: number = this.config.defaultTimeout ?? 15000,
 	): Promise<void> {
 		return new Promise((resolve, reject) => {
-			const startTime = Date.now();
+			const timestamp = Date.now();
 
 			const check = () => {
 				if (this.abortController.signal.aborted) {
@@ -97,11 +96,11 @@ export class Orchflow {
 					}
 				} catch (error) {
 					if (this.config.debug) {
-						console.debug("[Orchflow] Condition check error:", error);
+						console.debug("⚡[Orchflow] Condition check error:", error);
 					}
 				}
 
-				if (Date.now() - startTime > timeoutMs) {
+				if (Date.now() - timestamp > timeoutMs) {
 					reject(
 						new Error(`Timeout waiting for condition after ${timeoutMs}ms`),
 					);
@@ -459,7 +458,7 @@ export class Orchflow {
 
 	getText(selector: string, options?: { timeout?: number }): Promise<string> {
 		return new Promise((resolve, reject) => {
-			const startTime = performance.now();
+			const timestamp = performance.now();
 			try {
 				this.waitForCondition(
 					() => !!document.querySelector(selector),
@@ -468,13 +467,13 @@ export class Orchflow {
 					.then(() => {
 						const element = document.querySelector(selector);
 						const text = element?.textContent ?? "";
-						const duration = performance.now() - startTime;
+						const duration = performance.now() - timestamp;
 
 						this.executionSteps.push({
 							action: "getText",
 							selector,
 							value: text,
-							timestamp: startTime,
+							timestamp,
 							duration,
 							status: "success",
 						});
@@ -482,14 +481,14 @@ export class Orchflow {
 						resolve(text);
 					})
 					.catch((error) => {
-						const duration = performance.now() - startTime;
+						const duration = performance.now() - timestamp;
 						const errorMessage =
 							error instanceof Error ? error.message : String(error);
 
 						this.executionSteps.push({
 							action: "getText",
 							selector,
-							timestamp: startTime,
+							timestamp,
 							duration,
 							status: "error",
 							error: errorMessage,
@@ -509,7 +508,7 @@ export class Orchflow {
 		options?: { timeout?: number },
 	): Promise<string | null> {
 		return new Promise((resolve, reject) => {
-			const startTime = performance.now();
+			const timestamp = performance.now();
 			try {
 				this.waitForCondition(
 					() => !!document.querySelector(selector),
@@ -518,14 +517,14 @@ export class Orchflow {
 					.then(() => {
 						const element = document.querySelector(selector);
 						const value = element?.getAttribute(attribute) ?? null;
-						const duration = performance.now() - startTime;
+						const duration = performance.now() - timestamp;
 
 						if (selector)
 							this.executionSteps.push({
 								action: "getAttribute",
 								selector,
 								value,
-								timestamp: startTime,
+								timestamp,
 								duration,
 								status: "success",
 							});
@@ -533,14 +532,14 @@ export class Orchflow {
 						resolve(value);
 					})
 					.catch((error) => {
-						const duration = performance.now() - startTime;
+						const duration = performance.now() - timestamp;
 						const errorMessage =
 							error instanceof Error ? error.message : String(error);
 
 						this.executionSteps.push({
 							action: "getAttribute",
 							selector,
-							timestamp: startTime,
+							timestamp,
 							duration,
 							status: "error",
 							error: errorMessage,
@@ -572,7 +571,7 @@ export class Orchflow {
 	}
 
 	async execute(): Promise<ExecutionReport> {
-		const startTime = performance.now();
+		const timestamp = performance.now();
 		this.executionSteps = [];
 
 		try {
@@ -580,7 +579,7 @@ export class Orchflow {
 				await action();
 			}
 
-			const totalDuration = performance.now() - startTime;
+			const totalDuration = performance.now() - timestamp;
 
 			const report: ExecutionReport = {
 				totalDuration,
@@ -589,12 +588,12 @@ export class Orchflow {
 			};
 
 			if (this.config.debug) {
-				console.log("[Orchflow] Execution completed successfully", report);
+				console.info("⚡[Orchflow] Execution completed successfully", report);
 			}
 
 			return report;
 		} catch (error) {
-			const totalDuration = performance.now() - startTime;
+			const totalDuration = performance.now() - timestamp;
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
 
@@ -606,7 +605,7 @@ export class Orchflow {
 			};
 
 			if (this.config.debug) {
-				console.error("[Orchflow] Execution failed", report);
+				console.error("⚡[Orchflow] Execution failed", report);
 			}
 
 			throw error;
