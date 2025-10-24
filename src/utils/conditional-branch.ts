@@ -1,14 +1,16 @@
+import type { DomQueryHandler } from "../types/dom-query.types";
+import { query } from "./dom-query";
 import { Orchflow } from "./orchestrator";
 
 export class ConditionalBranch {
 	private orchestrator: Orchflow;
-	private condition: () => boolean | Promise<boolean>;
+	private condition: (q: DomQueryHandler) => boolean | Promise<boolean>;
 	private thenActions: Array<() => Promise<void>> = [];
 	private elseActions: Array<() => Promise<void>> = [];
 
 	constructor(
 		orchestrator: Orchflow,
-		condition: () => boolean | Promise<boolean>,
+		condition: (q: DomQueryHandler) => boolean | Promise<boolean>,
 	) {
 		this.orchestrator = orchestrator;
 		this.condition = condition;
@@ -27,7 +29,7 @@ export class ConditionalBranch {
 		this.elseActions = tempOrch.getActions();
 
 		this.orchestrator.getActions().push(async () => {
-			const conditionResult = await Promise.resolve(this.condition());
+			const conditionResult = await Promise.resolve(this.condition(query));
 
 			if (conditionResult) {
 				for (const action of this.thenActions) {

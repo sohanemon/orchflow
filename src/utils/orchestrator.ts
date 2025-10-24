@@ -1,5 +1,7 @@
 import type { ExecutionReport, ExecutionStep, OrchflowConfig } from "../types";
+import type { DomQueryHandler } from "../types/dom-query.types";
 import { ConditionalBranch } from "./conditional-branch";
+import { query } from "./dom-query";
 
 export class Orchflow {
 	protected actions: Array<() => Promise<void>> = [];
@@ -19,7 +21,7 @@ export class Orchflow {
 
 	private findElement(selector: string): Element | null {
 		try {
-			return document.querySelector(selector);
+			return query(selector).el;
 		} catch (error) {
 			if (this.config.debug) {
 				console.debug(`⚡[Orchflow] Invalid selector: ${selector}`, error);
@@ -535,7 +537,9 @@ export class Orchflow {
 		return this;
 	}
 
-	if(condition: () => boolean | Promise<boolean>): ConditionalBranch {
+	if(
+		condition: (q: DomQueryHandler) => boolean | Promise<boolean>,
+	): ConditionalBranch {
 		return new ConditionalBranch(this, condition);
 	}
 
