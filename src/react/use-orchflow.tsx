@@ -1,11 +1,8 @@
 "use client";
 
 import * as React from "react";
-import {
-	type ExecutionReport,
-	Orchflow,
-	type OrchflowConfig,
-} from "../utils/orchestrator";
+import type { ExecutionReport, OrchflowConfig } from "../types";
+import { Orchflow } from "../utils/orchestrator";
 
 export function useOrchflow(config?: OrchflowConfig) {
 	const [isExecuting, setIsExecuting] = React.useState(false);

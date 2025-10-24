@@ -1,27 +1,5 @@
+import type { ExecutionReport, ExecutionStep, OrchflowConfig } from "../types";
 import { ConditionalBranch } from "./conditional-branch";
-
-export interface ExecutionStep {
-	action: string;
-	selector?: string;
-	value?: string | null;
-	timestamp: number;
-	duration: number;
-	status: "success" | "error";
-	error?: string;
-}
-
-export interface ExecutionReport {
-	totalDuration: number;
-	steps: ExecutionStep[];
-	success: boolean;
-	error?: string;
-}
-
-export interface OrchflowConfig {
-	defaultTimeout?: number;
-	debug?: boolean;
-	delayBetweenActions?: number;
-}
 
 export class Orchflow {
 	protected actions: Array<() => Promise<void>> = [];
