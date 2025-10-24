@@ -1,7 +1,7 @@
 export interface ExecutionStep {
 	action: string;
 	selector?: string;
-	value?: string;
+	value?: string | null;
 	timestamp: number;
 	duration: number;
 	status: "success" | "error";
@@ -53,13 +53,14 @@ export class Orchestrator {
 			await fn();
 
 			const duration = performance.now() - startTime;
-			this.executionSteps.push({
-				action,
-				selector,
-				timestamp: startTime,
-				duration,
-				status: "success",
-			});
+			if (selector)
+				this.executionSteps.push({
+					action,
+					selector,
+					timestamp: startTime,
+					duration,
+					status: "success",
+				});
 
 			if (this.config.debug) {
 				console.log(
@@ -69,8 +70,8 @@ export class Orchestrator {
 
 			// Delay between actions
 			if (this.config.delayBetweenActions) {
-				await new Promise((r) =>
-					setTimeout(r, this.config.delayBetweenActions),
+				await new Promise((resolve) =>
+					setTimeout(resolve, this.config.delayBetweenActions),
 				);
 			}
 		} catch (error) {
@@ -78,14 +79,15 @@ export class Orchestrator {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
 
-			this.executionSteps.push({
-				action,
-				selector,
-				timestamp: startTime,
-				duration,
-				status: "error",
-				error: errorMessage,
-			});
+			if (selector)
+				this.executionSteps.push({
+					action,
+					selector,
+					timestamp: startTime,
+					duration,
+					status: "error",
+					error: errorMessage,
+				});
 
 			if (this.config.debug) {
 				console.error(`[Orchestrator] ✗ ${action} failed: ${errorMessage}`);
@@ -97,7 +99,7 @@ export class Orchestrator {
 
 	private waitForCondition(
 		condition: () => boolean,
-		timeoutMs: number = this.config.defaultTimeout,
+		timeoutMs: number = this.config.defaultTimeout ?? 15000,
 	): Promise<void> {
 		return new Promise((resolve, reject) => {
 			const startTime = Date.now();
@@ -113,8 +115,10 @@ export class Orchestrator {
 						resolve();
 						return;
 					}
-				} catch (e) {
-					console.info("⚡[orchestrator.ts:122] e:", e);
+				} catch (error) {
+					if (this.config.debug) {
+						console.debug("[Orchestrator] Condition check error:", error);
+					}
 				}
 
 				if (Date.now() - startTime > timeoutMs) {
@@ -140,8 +144,11 @@ export class Orchestrator {
 						() => !!document.querySelector(selector),
 						options?.timeout,
 					);
-					const element = document.querySelector(selector) as HTMLElement;
-					element.click();
+					const element = document.querySelector(selector);
+					if (!element) {
+						throw new Error(`Element not found: ${selector}`);
+					}
+					(element as HTMLElement).click();
 				},
 				selector,
 			);
@@ -167,13 +174,17 @@ export class Orchestrator {
 								() => !!document.querySelector(selector),
 								options?.timeout,
 							);
-							const element = document.querySelector(
-								selector,
-							) as HTMLInputElement;
-							element.focus();
-							element.value = text;
-							element.dispatchEvent(new Event("input", { bubbles: true }));
-							element.dispatchEvent(new Event("change", { bubbles: true }));
+							const element = document.querySelector(selector);
+							if (!element) {
+								throw new Error(`Element not found: ${selector}`);
+							}
+							const inputElement = element as HTMLInputElement;
+							inputElement.focus();
+							inputElement.value = text;
+							inputElement.dispatchEvent(new Event("input", { bubbles: true }));
+							inputElement.dispatchEvent(
+								new Event("change", { bubbles: true }),
+							);
 						},
 						selector,
 					);
@@ -181,7 +192,7 @@ export class Orchestrator {
 				} catch (error) {
 					lastError = error as Error;
 					if (i < retries - 1) {
-						await new Promise((r) => setTimeout(r, 100 * (i + 1)));
+						await new Promise((resolve) => setTimeout(resolve, 100 * (i + 1)));
 					}
 				}
 			}
@@ -204,22 +215,28 @@ export class Orchestrator {
 						() => !!document.querySelector(selector),
 						options?.timeout,
 					);
-					const element = document.querySelector(selector) as HTMLInputElement;
-					element.focus();
+					const element = document.querySelector(selector);
+					if (!element) {
+						throw new Error(`Element not found: ${selector}`);
+					}
+					const inputElement = element as HTMLInputElement;
+					inputElement.focus();
 
 					for (const char of text) {
-						element.value += char;
-						element.dispatchEvent(
+						inputElement.value += char;
+						inputElement.dispatchEvent(
 							new KeyboardEvent("keydown", { key: char, bubbles: true }),
 						);
-						element.dispatchEvent(new Event("input", { bubbles: true }));
+						inputElement.dispatchEvent(new Event("input", { bubbles: true }));
 
 						if (options?.delay) {
-							await new Promise((r) => setTimeout(r, options.delay));
+							await new Promise((resolve) =>
+								setTimeout(resolve, options.delay),
+							);
 						}
 					}
 
-					element.dispatchEvent(new Event("change", { bubbles: true }));
+					inputElement.dispatchEvent(new Event("change", { bubbles: true }));
 				},
 				selector,
 			);
@@ -236,11 +253,15 @@ export class Orchestrator {
 						() => !!document.querySelector(selector),
 						options?.timeout,
 					);
-					const element = document.querySelector(selector) as HTMLInputElement;
-					element.focus();
-					element.value = "";
-					element.dispatchEvent(new Event("input", { bubbles: true }));
-					element.dispatchEvent(new Event("change", { bubbles: true }));
+					const element = document.querySelector(selector);
+					if (!element) {
+						throw new Error(`Element not found: ${selector}`);
+					}
+					const inputElement = element as HTMLInputElement;
+					inputElement.focus();
+					inputElement.value = "";
+					inputElement.dispatchEvent(new Event("input", { bubbles: true }));
+					inputElement.dispatchEvent(new Event("change", { bubbles: true }));
 				},
 				selector,
 			);
@@ -257,7 +278,10 @@ export class Orchestrator {
 						() => !!document.querySelector(selector),
 						options?.timeout,
 					);
-					const element = document.querySelector(selector) as HTMLElement;
+					const element = document.querySelector(selector);
+					if (!element) {
+						throw new Error(`Element not found: ${selector}`);
+					}
 					element.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
 				},
 				selector,
@@ -279,9 +303,13 @@ export class Orchestrator {
 						() => !!document.querySelector(selector),
 						options?.timeout,
 					);
-					const element = document.querySelector(selector) as HTMLSelectElement;
-					element.value = value;
-					element.dispatchEvent(new Event("change", { bubbles: true }));
+					const element = document.querySelector(selector);
+					if (!element) {
+						throw new Error(`Element not found: ${selector}`);
+					}
+					const selectElement = element as HTMLSelectElement;
+					selectElement.value = value;
+					selectElement.dispatchEvent(new Event("change", { bubbles: true }));
 				},
 				selector,
 			);
@@ -512,14 +540,15 @@ export class Orchestrator {
 						const value = element?.getAttribute(attribute) ?? null;
 						const duration = performance.now() - startTime;
 
-						this.executionSteps.push({
-							action: "getAttribute",
-							selector,
-							value: value ?? undefined,
-							timestamp: startTime,
-							duration,
-							status: "success",
-						});
+						if (selector)
+							this.executionSteps.push({
+								action: "getAttribute",
+								selector,
+								value,
+								timestamp: startTime,
+								duration,
+								status: "success",
+							});
 
 						resolve(value);
 					})
@@ -548,7 +577,7 @@ export class Orchestrator {
 	delay(ms: number): this {
 		this.actions.push(async () => {
 			await this.executeAction("delay", async () => {
-				await new Promise((r) => setTimeout(r, ms));
+				await new Promise((resolve) => setTimeout(resolve, ms));
 			});
 		});
 		return this;

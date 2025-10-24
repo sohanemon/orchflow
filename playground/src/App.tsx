@@ -1,9 +1,15 @@
-import { MyButton } from '../../src'
+import { useOrchflow } from "../../dist";
 
 export function App() {
-  return (
-    <>
-      <MyButton type="primary" />
-    </>
-  )
+	const { execute } = useOrchflow();
+	return (
+		<button
+			onClick={() => {
+				execute((o) => o);
+			}}
+			type="button"
+		>
+			test
+		</button>
+	);
 }
