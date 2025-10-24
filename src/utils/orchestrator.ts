@@ -6,6 +6,7 @@ export class Orchflow {
 	private executionSteps: ExecutionStep[] = [];
 	private config: OrchflowConfig;
 	private abortController: AbortController = new AbortController();
+	private maxHistorySize = 1000;
 
 	constructor(config: OrchflowConfig = {}) {
 		this.config = {
@@ -14,6 +15,75 @@ export class Orchflow {
 			delayBetweenActions: 0,
 			...config,
 		};
+	}
+
+	private findElement(selector: string): Element | null {
+		try {
+			return document.querySelector(selector);
+		} catch (error) {
+			if (this.config.debug) {
+				console.debug(`⚡[Orchflow] Invalid selector: ${selector}`, error);
+			}
+			return null;
+		}
+	}
+
+	private isElementVisible(element: Element): boolean {
+		const style = window.getComputedStyle(element);
+		return (
+			style.display !== "none" &&
+			style.visibility !== "hidden" &&
+			style.opacity !== "0"
+		);
+	}
+
+	private isElementClickable(element: Element): boolean {
+		return (
+			this.isElementVisible(element) && !(element as HTMLButtonElement).disabled
+		);
+	}
+
+	private waitForCondition(
+		condition: () => boolean,
+		timeoutMs: number = this.config.defaultTimeout ?? 15000,
+	): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const timestamp = Date.now();
+			let pollInterval: ReturnType<typeof setTimeout> | null = null;
+			const pollDelay = 50;
+
+			const check = () => {
+				if (this.abortController.signal.aborted) {
+					if (pollInterval) clearTimeout(pollInterval);
+					reject(new Error("Orchestration aborted"));
+					return;
+				}
+
+				try {
+					if (condition()) {
+						if (pollInterval) clearTimeout(pollInterval);
+						resolve();
+						return;
+					}
+				} catch (error) {
+					if (this.config.debug) {
+						console.debug("⚡[Orchflow] Condition check error:", error);
+					}
+				}
+
+				if (Date.now() - timestamp > timeoutMs) {
+					if (pollInterval) clearTimeout(pollInterval);
+					reject(
+						new Error(`Timeout waiting for condition after ${timeoutMs}ms`),
+					);
+					return;
+				}
+
+				pollInterval = setTimeout(check, pollDelay);
+			};
+
+			check();
+		});
 	}
 
 	private async executeAction(
@@ -33,14 +103,15 @@ export class Orchflow {
 			await fn();
 
 			const duration = performance.now() - timestamp;
-			if (selector)
-				this.executionSteps.push({
+			if (selector) {
+				this.addExecutionStep({
 					action,
 					selector,
 					timestamp,
 					duration,
 					status: "success",
 				});
+			}
 
 			if (this.config.debug) {
 				console.info(
@@ -58,8 +129,8 @@ export class Orchflow {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
 
-			if (selector)
-				this.executionSteps.push({
+			if (selector) {
+				this.addExecutionStep({
 					action,
 					selector,
 					timestamp,
@@ -67,6 +138,7 @@ export class Orchflow {
 					status: "error",
 					error: errorMessage,
 				});
+			}
 
 			if (this.config.debug) {
 				console.error(`⚡[Orchflow] ✗ ${action} failed: ${errorMessage}`);
@@ -76,42 +148,12 @@ export class Orchflow {
 		}
 	}
 
-	private waitForCondition(
-		condition: () => boolean,
-		timeoutMs: number = this.config.defaultTimeout ?? 15000,
-	): Promise<void> {
-		return new Promise((resolve, reject) => {
-			const timestamp = Date.now();
-
-			const check = () => {
-				if (this.abortController.signal.aborted) {
-					reject(new Error("Orchestration aborted"));
-					return;
-				}
-
-				try {
-					if (condition()) {
-						resolve();
-						return;
-					}
-				} catch (error) {
-					if (this.config.debug) {
-						console.debug("⚡[Orchflow] Condition check error:", error);
-					}
-				}
-
-				if (Date.now() - timestamp > timeoutMs) {
-					reject(
-						new Error(`Timeout waiting for condition after ${timeoutMs}ms`),
-					);
-					return;
-				}
-
-				requestAnimationFrame(check);
-			};
-
-			check();
-		});
+	private addExecutionStep(step: ExecutionStep): void {
+		this.executionSteps.push(step);
+		// NOTE: Keep only recent steps to prevent unbounded memory growth
+		if (this.executionSteps.length > this.maxHistorySize) {
+			this.executionSteps = this.executionSteps.slice(-this.maxHistorySize);
+		}
 	}
 
 	click(selector: string, options?: { timeout?: number }): this {
@@ -120,10 +162,10 @@ export class Orchflow {
 				"click",
 				async () => {
 					await this.waitForCondition(
-						() => !!document.querySelector(selector),
+						() => !!this.findElement(selector),
 						options?.timeout,
 					);
-					const element = document.querySelector(selector);
+					const element = this.findElement(selector);
 					if (!element) {
 						throw new Error(`Element not found: ${selector}`);
 					}
@@ -150,20 +192,17 @@ export class Orchflow {
 						"fill",
 						async () => {
 							await this.waitForCondition(
-								() => !!document.querySelector(selector),
+								() => !!this.findElement(selector),
 								options?.timeout,
 							);
-							const element = document.querySelector(selector);
+							const element = this.findElement(selector) as HTMLInputElement;
 							if (!element) {
 								throw new Error(`Element not found: ${selector}`);
 							}
-							const inputElement = element as HTMLInputElement;
-							inputElement.focus();
-							inputElement.value = text;
-							inputElement.dispatchEvent(new Event("input", { bubbles: true }));
-							inputElement.dispatchEvent(
-								new Event("change", { bubbles: true }),
-							);
+							element.focus();
+							element.value = text;
+							element.dispatchEvent(new Event("input", { bubbles: true }));
+							element.dispatchEvent(new Event("change", { bubbles: true }));
 						},
 						selector,
 					);
@@ -191,22 +230,21 @@ export class Orchflow {
 				"type",
 				async () => {
 					await this.waitForCondition(
-						() => !!document.querySelector(selector),
+						() => !!this.findElement(selector),
 						options?.timeout,
 					);
-					const element = document.querySelector(selector);
+					const element = this.findElement(selector) as HTMLInputElement;
 					if (!element) {
 						throw new Error(`Element not found: ${selector}`);
 					}
-					const inputElement = element as HTMLInputElement;
-					inputElement.focus();
+					element.focus();
 
 					for (const char of text) {
-						inputElement.value += char;
-						inputElement.dispatchEvent(
+						element.value += char;
+						element.dispatchEvent(
 							new KeyboardEvent("keydown", { key: char, bubbles: true }),
 						);
-						inputElement.dispatchEvent(new Event("input", { bubbles: true }));
+						element.dispatchEvent(new Event("input", { bubbles: true }));
 
 						if (options?.delay) {
 							await new Promise((resolve) =>
@@ -215,7 +253,7 @@ export class Orchflow {
 						}
 					}
 
-					inputElement.dispatchEvent(new Event("change", { bubbles: true }));
+					element.dispatchEvent(new Event("change", { bubbles: true }));
 				},
 				selector,
 			);
@@ -229,18 +267,17 @@ export class Orchflow {
 				"clear",
 				async () => {
 					await this.waitForCondition(
-						() => !!document.querySelector(selector),
+						() => !!this.findElement(selector),
 						options?.timeout,
 					);
-					const element = document.querySelector(selector);
+					const element = this.findElement(selector) as HTMLInputElement;
 					if (!element) {
 						throw new Error(`Element not found: ${selector}`);
 					}
-					const inputElement = element as HTMLInputElement;
-					inputElement.focus();
-					inputElement.value = "";
-					inputElement.dispatchEvent(new Event("input", { bubbles: true }));
-					inputElement.dispatchEvent(new Event("change", { bubbles: true }));
+					element.focus();
+					element.value = "";
+					element.dispatchEvent(new Event("input", { bubbles: true }));
+					element.dispatchEvent(new Event("change", { bubbles: true }));
 				},
 				selector,
 			);
@@ -254,10 +291,10 @@ export class Orchflow {
 				"hover",
 				async () => {
 					await this.waitForCondition(
-						() => !!document.querySelector(selector),
+						() => !!this.findElement(selector),
 						options?.timeout,
 					);
-					const element = document.querySelector(selector);
+					const element = this.findElement(selector);
 					if (!element) {
 						throw new Error(`Element not found: ${selector}`);
 					}
@@ -279,16 +316,15 @@ export class Orchflow {
 				"select",
 				async () => {
 					await this.waitForCondition(
-						() => !!document.querySelector(selector),
+						() => !!this.findElement(selector),
 						options?.timeout,
 					);
-					const element = document.querySelector(selector);
+					const element = this.findElement(selector) as HTMLSelectElement;
 					if (!element) {
 						throw new Error(`Element not found: ${selector}`);
 					}
-					const selectElement = element as HTMLSelectElement;
-					selectElement.value = value;
-					selectElement.dispatchEvent(new Event("change", { bubbles: true }));
+					element.value = value;
+					element.dispatchEvent(new Event("change", { bubbles: true }));
 				},
 				selector,
 			);
@@ -324,7 +360,7 @@ export class Orchflow {
 				"waitFor",
 				async () => {
 					await this.waitForCondition(
-						() => !!document.querySelector(selector),
+						() => !!this.findElement(selector),
 						options?.timeout,
 					);
 				},
@@ -340,14 +376,8 @@ export class Orchflow {
 				"waitForVisible",
 				async () => {
 					await this.waitForCondition(() => {
-						const element = document.querySelector(selector);
-						if (!element) return false;
-						const style = window.getComputedStyle(element);
-						return (
-							style.display !== "none" &&
-							style.visibility !== "hidden" &&
-							style.opacity !== "0"
-						);
+						const element = this.findElement(selector);
+						return element ? this.isElementVisible(element) : false;
 					}, options?.timeout);
 				},
 				selector,
@@ -362,13 +392,8 @@ export class Orchflow {
 				"waitForClickable",
 				async () => {
 					await this.waitForCondition(() => {
-						const element = document.querySelector(selector);
-						if (!element) return false;
-						const style = window.getComputedStyle(element);
-						const isVisible =
-							style.display !== "none" && style.visibility !== "hidden";
-						const isEnabled = !(element as HTMLButtonElement).disabled;
-						return isVisible && isEnabled;
+						const element = this.findElement(selector);
+						return element ? this.isElementClickable(element) : false;
 					}, options?.timeout);
 				},
 				selector,
@@ -400,7 +425,7 @@ export class Orchflow {
 				"waitForAttribute",
 				async () => {
 					await this.waitForCondition(() => {
-						const element = document.querySelector(selector);
+						const element = this.findElement(selector);
 						return element?.getAttribute(attribute) === value;
 					}, options?.timeout);
 				},
@@ -423,7 +448,7 @@ export class Orchflow {
 			await this.executeAction(
 				"assert",
 				async () => {
-					const element = document.querySelector(selector);
+					const element = this.findElement(selector);
 
 					if (options?.exists === false && element) {
 						throw new Error(`Element ${selector} should not exist but it does`);
@@ -440,12 +465,7 @@ export class Orchflow {
 					}
 
 					if (options?.visible && element) {
-						const style = window.getComputedStyle(element);
-						const isVisible =
-							style.display !== "none" &&
-							style.visibility !== "hidden" &&
-							style.opacity !== "0";
-						if (!isVisible) {
+						if (!this.isElementVisible(element)) {
 							throw new Error(`Element ${selector} is not visible`);
 						}
 					}
@@ -456,101 +476,52 @@ export class Orchflow {
 		return this;
 	}
 
-	getText(selector: string, options?: { timeout?: number }): Promise<string> {
-		return new Promise((resolve, reject) => {
-			const timestamp = performance.now();
-			try {
-				this.waitForCondition(
-					() => !!document.querySelector(selector),
-					options?.timeout,
-				)
-					.then(() => {
-						const element = document.querySelector(selector);
-						const text = element?.textContent ?? "";
-						const duration = performance.now() - timestamp;
-
-						this.executionSteps.push({
-							action: "getText",
-							selector,
-							value: text,
-							timestamp,
-							duration,
-							status: "success",
-						});
-
-						resolve(text);
-					})
-					.catch((error) => {
-						const duration = performance.now() - timestamp;
-						const errorMessage =
-							error instanceof Error ? error.message : String(error);
-
-						this.executionSteps.push({
-							action: "getText",
-							selector,
-							timestamp,
-							duration,
-							status: "error",
-							error: errorMessage,
-						});
-
-						reject(error);
-					});
-			} catch (error) {
-				reject(error);
-			}
+	getText(selector: string, options?: { timeout?: number }): this {
+		this.actions.push(async () => {
+			await this.executeAction(
+				"getText",
+				async () => {
+					await this.waitForCondition(
+						() => !!this.findElement(selector),
+						options?.timeout,
+					);
+					const element = this.findElement(selector);
+					const text = element?.textContent ?? "";
+					const lastStep = this.executionSteps[this.executionSteps.length - 1];
+					if (lastStep) {
+						lastStep.value = text;
+					}
+				},
+				selector,
+			);
 		});
+		return this;
 	}
 
 	getAttribute(
 		selector: string,
 		attribute: string,
 		options?: { timeout?: number },
-	): Promise<string | null> {
-		return new Promise((resolve, reject) => {
-			const timestamp = performance.now();
-			try {
-				this.waitForCondition(
-					() => !!document.querySelector(selector),
-					options?.timeout,
-				)
-					.then(() => {
-						const element = document.querySelector(selector);
-						const value = element?.getAttribute(attribute) ?? null;
-						const duration = performance.now() - timestamp;
-
-						if (selector)
-							this.executionSteps.push({
-								action: "getAttribute",
-								selector,
-								value,
-								timestamp,
-								duration,
-								status: "success",
-							});
-
-						resolve(value);
-					})
-					.catch((error) => {
-						const duration = performance.now() - timestamp;
-						const errorMessage =
-							error instanceof Error ? error.message : String(error);
-
-						this.executionSteps.push({
-							action: "getAttribute",
-							selector,
-							timestamp,
-							duration,
-							status: "error",
-							error: errorMessage,
-						});
-
-						reject(error);
-					});
-			} catch (error) {
-				reject(error);
-			}
+	): this {
+		this.actions.push(async () => {
+			await this.executeAction(
+				"getAttribute",
+				async () => {
+					await this.waitForCondition(
+						() => !!this.findElement(selector),
+						options?.timeout,
+					);
+					const element = this.findElement(selector);
+					const value = element?.getAttribute(attribute) ?? null;
+					const lastStep = this.executionSteps[this.executionSteps.length - 1];
+					if (lastStep) {
+						lastStep.value = value;
+					}
+				},
+				selector,
+			);
 		});
+		return this;
 	}
 
 	delay(ms: number): this {
@@ -572,7 +543,7 @@ export class Orchflow {
 
 	async execute(): Promise<ExecutionReport> {
 		const timestamp = performance.now();
-		this.executionSteps = [];
+		this.executionSteps = []; // INFO: Reset history on each execute
 
 		try {
 			for (const action of this.actions) {
@@ -618,5 +589,11 @@ export class Orchflow {
 
 	getHistory(): ExecutionStep[] {
 		return [...this.executionSteps];
+	}
+
+	destroy(): void {
+		this.abort();
+		this.actions = [];
+		this.executionSteps = [];
 	}
 }
