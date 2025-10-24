@@ -88,7 +88,7 @@ export class Orchflow {
 		});
 	}
 
-	private async executeAction(
+	private async trackExecution(
 		action: string,
 		fn: () => Promise<void>,
 		selector?: string,
@@ -158,9 +158,16 @@ export class Orchflow {
 		}
 	}
 
-	click(selector: string, options?: { timeout?: number }): this {
+	schedule(callback: () => void | Promise<void>): this {
 		this.actions.push(async () => {
-			await this.executeAction(
+			await callback();
+		});
+		return this;
+	}
+
+	click(selector: string, options?: { timeout?: number }): this {
+		this.schedule(async () => {
+			await this.trackExecution(
 				"click",
 				async () => {
 					await this.waitForCondition(
@@ -184,13 +191,13 @@ export class Orchflow {
 		text: string,
 		options?: { timeout?: number; retry?: number },
 	): this {
-		this.actions.push(async () => {
+		this.schedule(async () => {
 			let lastError: Error | null = null;
 			const retries = options?.retry ?? 1;
 
 			for (let i = 0; i < retries; i++) {
 				try {
-					await this.executeAction(
+					await this.trackExecution(
 						"fill",
 						async () => {
 							await this.waitForCondition(
@@ -227,8 +234,8 @@ export class Orchflow {
 		text: string,
 		options?: { timeout?: number; delay?: number },
 	): this {
-		this.actions.push(async () => {
-			await this.executeAction(
+		this.schedule(async () => {
+			await this.trackExecution(
 				"type",
 				async () => {
 					await this.waitForCondition(
@@ -264,8 +271,8 @@ export class Orchflow {
 	}
 
 	clear(selector: string, options?: { timeout?: number }): this {
-		this.actions.push(async () => {
-			await this.executeAction(
+		this.schedule(async () => {
+			await this.trackExecution(
 				"clear",
 				async () => {
 					await this.waitForCondition(
@@ -288,8 +295,8 @@ export class Orchflow {
 	}
 
 	hover(selector: string, options?: { timeout?: number }): this {
-		this.actions.push(async () => {
-			await this.executeAction(
+		this.schedule(async () => {
+			await this.trackExecution(
 				"hover",
 				async () => {
 					await this.waitForCondition(
@@ -313,8 +320,8 @@ export class Orchflow {
 		value: string,
 		options?: { timeout?: number },
 	): this {
-		this.actions.push(async () => {
-			await this.executeAction(
+		this.schedule(async () => {
+			await this.trackExecution(
 				"select",
 				async () => {
 					await this.waitForCondition(
@@ -335,8 +342,8 @@ export class Orchflow {
 	}
 
 	press(key: string, options?: { timeout?: number }): this {
-		this.actions.push(async () => {
-			await this.executeAction("press", async () => {
+		this.schedule(async () => {
+			await this.trackExecution("press", async () => {
 				if (options?.timeout) {
 					await this.waitForCondition(() => true, options.timeout);
 				}
@@ -357,8 +364,8 @@ export class Orchflow {
 	}
 
 	waitFor(selector: string, options?: { timeout?: number }): this {
-		this.actions.push(async () => {
-			await this.executeAction(
+		this.schedule(async () => {
+			await this.trackExecution(
 				"waitFor",
 				async () => {
 					await this.waitForCondition(
@@ -373,8 +380,8 @@ export class Orchflow {
 	}
 
 	waitForVisible(selector: string, options?: { timeout?: number }): this {
-		this.actions.push(async () => {
-			await this.executeAction(
+		this.schedule(async () => {
+			await this.trackExecution(
 				"waitForVisible",
 				async () => {
 					await this.waitForCondition(() => {
@@ -389,8 +396,8 @@ export class Orchflow {
 	}
 
 	waitForClickable(selector: string, options?: { timeout?: number }): this {
-		this.actions.push(async () => {
-			await this.executeAction(
+		this.schedule(async () => {
+			await this.trackExecution(
 				"waitForClickable",
 				async () => {
 					await this.waitForCondition(() => {
@@ -405,8 +412,8 @@ export class Orchflow {
 	}
 
 	waitForText(text: string, options?: { timeout?: number }): this {
-		this.actions.push(async () => {
-			await this.executeAction("waitForText", async () => {
+		this.schedule(async () => {
+			await this.trackExecution("waitForText", async () => {
 				await this.waitForCondition(
 					() => document.body.textContent?.includes(text) ?? false,
 					options?.timeout,
@@ -422,8 +429,8 @@ export class Orchflow {
 		value: string,
 		options?: { timeout?: number },
 	): this {
-		this.actions.push(async () => {
-			await this.executeAction(
+		this.schedule(async () => {
+			await this.trackExecution(
 				"waitForAttribute",
 				async () => {
 					await this.waitForCondition(() => {
@@ -446,8 +453,8 @@ export class Orchflow {
 			timeout?: number;
 		},
 	): this {
-		this.actions.push(async () => {
-			await this.executeAction(
+		this.schedule(async () => {
+			await this.trackExecution(
 				"assert",
 				async () => {
 					const element = this.findElement(selector);
@@ -479,8 +486,8 @@ export class Orchflow {
 	}
 
 	getText(selector: string, options?: { timeout?: number }): this {
-		this.actions.push(async () => {
-			await this.executeAction(
+		this.schedule(async () => {
+			await this.trackExecution(
 				"getText",
 				async () => {
 					await this.waitForCondition(
@@ -501,13 +508,17 @@ export class Orchflow {
 		return this;
 	}
 
+	get signal() {
+		return this.abortController.signal;
+	}
+
 	getAttribute(
 		selector: string,
 		attribute: string,
 		options?: { timeout?: number },
 	): this {
-		this.actions.push(async () => {
-			await this.executeAction(
+		this.schedule(async () => {
+			await this.trackExecution(
 				"getAttribute",
 				async () => {
 					await this.waitForCondition(
@@ -529,8 +540,8 @@ export class Orchflow {
 	}
 
 	delay(ms: number): this {
-		this.actions.push(async () => {
-			await this.executeAction("delay", async () => {
+		this.schedule(async () => {
+			await this.trackExecution("delay", async () => {
 				await new Promise((resolve) => setTimeout(resolve, ms));
 			});
 		});
@@ -589,17 +600,23 @@ export class Orchflow {
 		}
 	}
 
-	abort(): void {
-		this.abortController.abort();
+	continue() {
+		return this;
 	}
 
-	getHistory(): ExecutionStep[] {
+	abort() {
+		this.abortController.abort();
+		return this;
+	}
+
+	get history() {
 		return [...this.executionSteps];
 	}
 
-	destroy(): void {
+	destroy() {
 		this.abort();
 		this.actions = [];
 		this.executionSteps = [];
+		return this;
 	}
 }

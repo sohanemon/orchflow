@@ -1,12 +1,12 @@
 export type DomQuery = {
 	el: HTMLElement | null;
-	getIsDisabled: () => boolean;
-	getIsVisible: () => boolean;
-	getIsHovered: () => boolean;
+	isDisabled: boolean;
+	isVisible: boolean;
+	isHovered: boolean;
 	hasAttribute: (attr: string) => boolean;
 	click: () => void;
 	focus: () => void;
-	setValue: (val: string) => void;
+	value: string;
 	query: (selector: string) => DomQuery;
 };
 

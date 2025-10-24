@@ -5,16 +5,26 @@ export function query(selector: string, node?: HTMLElement | null): DomQuery {
 
 	const wrapper: DomQuery = {
 		el,
-		getIsDisabled: () => (el as HTMLButtonElement)?.disabled ?? false,
-		getIsVisible: () => !!el && !!(el.offsetWidth || el.offsetHeight),
-		getIsHovered: () => !!el && el.matches(":hover"),
-		hasAttribute: (attr) => !!el && el.hasAttribute(attr),
-		click: () => el?.click(),
-		focus: () => (el as HTMLElement)?.focus(),
-		setValue: (val) => {
+		query: (sel) => query(sel, el),
+
+		get isDisabled() {
+			return (el as HTMLButtonElement)?.disabled ?? false;
+		},
+		get isVisible() {
+			return !!el && !!(el.offsetWidth || el.offsetHeight);
+		},
+		get isHovered() {
+			return !!el && el.matches(":hover");
+		},
+
+		set value(val: string) {
 			if (el instanceof HTMLInputElement) el.value = val;
 		},
-		query: (sel) => query(sel, el),
+		hasAttribute: (attr) => !!el && el.hasAttribute(attr),
+
+		// NOTE: actions
+		click: () => el?.click(),
+		focus: () => (el as HTMLElement)?.focus(),
 	};
 
 	return wrapper;
