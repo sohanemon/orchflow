@@ -1,29 +1,20 @@
-# react-components-starter
+# ⚠️ Deprecated: react-orch
 
-A starter for creating a React component library.
+> **This package has been deprecated.**  
+> Please migrate to [`orchflow`](https://www.npmjs.com/package/orchflow) for the latest features, improvements, and ongoing support.
 
-## Development
+---
 
-- Install dependencies:
+## 🧭 Migration Guide
 
-```bash
-npm install
-```
+The `orchflow` package is the official successor to `react-orch`.  
+It provides the same core functionality with a better developer experience, improved performance, and new APIs.
 
-- Run the playground:
-
-```bash
-npm run play
-```
-
-- Run the unit tests:
+### ✅ Install the new package
 
 ```bash
-npm run test
-```
+# Remove the old package
+npm uninstall react-orch
 
-- Build the library:
-
-```bash
-npm run build
-```
+# Install the new one
+npm install orchflow
