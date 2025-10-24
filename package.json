@@ -1,6 +1,6 @@
 {
 	"name": "orchflow",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "react orchestrator hook",
 	"type": "module",
 	"license": "MIT",
