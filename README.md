@@ -4,25 +4,25 @@ A lightweight, chainable browser automation library for simulating user interact
 
 ## Features
 
-- 🎯 **Chainable API** - Fluent interface for building automation sequences
-- ⏱️ **Smart Waits** - Automatic element detection with configurable timeouts
-- 🔄 **Retry Logic** - Built-in retry mechanisms for flaky operations
-- 📊 **Execution Reports** - Detailed metrics on every action performed
-- 🛑 **Abort Control** - Stop execution at any time
-- 🔀 **Conditional Branching** - Execute different actions based on conditions
-- 🐛 **Debug Mode** - Detailed logging for troubleshooting
+* 🎯 **Chainable API** – Fluent interface for building automation sequences
+* ⏱️ **Smart Waits** – Automatic element detection with configurable timeouts
+* 🔄 **Retry Logic** – Built-in retry mechanisms for flaky operations
+* 📊 **Execution Reports** – Detailed metrics on every action performed
+* 🛑 **Abort Control** – Stop execution at any time
+* 🔀 **Conditional Branching** – Execute different actions based on conditions
+* 🐛 **Debug Mode** – Detailed logging for troubleshooting
 
 ## Installation
 
-\`\`\`bash
+```bash
 npm install orchflow
 # or
 pnpm add orchflow
-\`\`\`
+```
 
 ## Quick Start
 
-\`\`\`typescript
+```typescript
 import { Orchestrator } from 'orchflow';
 
 const orchflow = new Orchestrator({ debug: true });
@@ -34,17 +34,19 @@ await orchflow
   .click('#submit')
   .waitForVisible('#dashboard')
   .execute();
-\`\`\`
+```
 
 ## Configuration
 
-\`\`\`typescript
+```typescript
 const orchflow = new Orchestrator({
   defaultTimeout: 15000,        // Default wait timeout in ms
   debug: true,                  // Enable debug logging
   delayBetweenActions: 500,     // Delay between actions in ms
 });
-\`\`\`
+```
+
+---
 
 ## API Reference
 
@@ -56,15 +58,16 @@ All action methods return `this` for chaining, except `getText()` and `getAttrib
 
 Clicks an element. Waits for the element to exist before clicking.
 
-\`\`\`typescript
+```typescript
 orchflow
   .click('#submit-button')
   .click('.modal-close', { timeout: 5000 })
   .execute();
-\`\`\`
+```
 
 **Options:**
-- `timeout?: number` - Custom timeout for this action
+
+* `timeout?: number` - Custom timeout for this action
 
 ---
 
@@ -72,32 +75,34 @@ orchflow
 
 Fills an input field with text. Sets the value and triggers input/change events.
 
-\`\`\`typescript
+```typescript
 orchflow
   .fill('#email', 'user@example.com')
   .fill('#password', 'secret123', { retry: 3 })
   .execute();
-\`\`\`
+```
 
 **Options:**
-- `timeout?: number` - Custom timeout
-- `retry?: number` - Number of retry attempts (default: 1)
+
+* `timeout?: number` - Custom timeout
+* `retry?: number` - Number of retry attempts (default: 1)
 
 ---
 
 #### `type(selector, text, options?)`
 
-Types text character by character, simulating real keyboard input. Useful for fields with input validation.
+Types text character by character, simulating real keyboard input.
 
-\`\`\`typescript
+```typescript
 orchflow
   .type('#search', 'hello world', { delay: 50 })
   .execute();
-\`\`\`
+```
 
 **Options:**
-- `timeout?: number` - Custom timeout
-- `delay?: number` - Delay between each character in ms
+
+* `timeout?: number`
+* `delay?: number` - Delay between each character in ms
 
 ---
 
@@ -105,16 +110,13 @@ orchflow
 
 Clears the value of an input field.
 
-\`\`\`typescript
+```typescript
 orchflow
   .fill('#search', 'old text')
   .clear('#search')
   .fill('#search', 'new text')
   .execute();
-\`\`\`
-
-**Options:**
-- `timeout?: number` - Custom timeout
+```
 
 ---
 
@@ -122,16 +124,13 @@ orchflow
 
 Hovers over an element, triggering mouseover events.
 
-\`\`\`typescript
+```typescript
 orchflow
   .hover('#dropdown-trigger')
   .waitForVisible('#dropdown-menu')
   .click('#dropdown-item')
   .execute();
-\`\`\`
-
-**Options:**
-- `timeout?: number` - Custom timeout
+```
 
 ---
 
@@ -139,15 +138,12 @@ orchflow
 
 Selects an option in a dropdown/select element.
 
-\`\`\`typescript
+```typescript
 orchflow
   .select('#country', 'US')
   .select('#category', 'electronics')
   .execute();
-\`\`\`
-
-**Options:**
-- `timeout?: number` - Custom timeout
+```
 
 ---
 
@@ -155,16 +151,13 @@ orchflow
 
 Presses a keyboard key globally.
 
-\`\`\`typescript
+```typescript
 orchflow
   .press('Enter')
   .press('Escape')
   .press('Tab')
   .execute();
-\`\`\`
-
-**Options:**
-- `timeout?: number` - Custom timeout
+```
 
 ---
 
@@ -172,48 +165,39 @@ orchflow
 
 Waits for an element to exist in the DOM.
 
-\`\`\`typescript
+```typescript
 orchflow
   .click('#load-more')
   .waitFor('.new-items')
   .execute();
-\`\`\`
-
-**Options:**
-- `timeout?: number` - Custom timeout (default: 15000ms)
+```
 
 ---
 
 #### `waitForVisible(selector, options?)`
 
-Waits for an element to be visible (not hidden, not display:none, opacity > 0).
+Waits for an element to be visible.
 
-\`\`\`typescript
+```typescript
 orchflow
   .click('#show-modal')
   .waitForVisible('.modal')
   .execute();
-\`\`\`
-
-**Options:**
-- `timeout?: number` - Custom timeout
+```
 
 ---
 
 #### `waitForClickable(selector, options?)`
 
-Waits for an element to be both visible and enabled (not disabled).
+Waits for an element to be visible and enabled.
 
-\`\`\`typescript
+```typescript
 orchflow
   .fill('#form-input', 'data')
   .waitForClickable('#submit-btn')
   .click('#submit-btn')
   .execute();
-\`\`\`
-
-**Options:**
-- `timeout?: number` - Custom timeout
+```
 
 ---
 
@@ -221,51 +205,46 @@ orchflow
 
 Waits for specific text to appear anywhere on the page.
 
-\`\`\`typescript
+```typescript
 orchflow
   .click('#search-button')
   .waitForText('Results found')
   .execute();
-\`\`\`
-
-**Options:**
-- `timeout?: number` - Custom timeout
+```
 
 ---
 
 #### `waitForAttribute(selector, attribute, value, options?)`
 
-Waits for an element's attribute to have a specific value.
+Waits for an element’s attribute to have a specific value.
 
-\`\`\`typescript
+```typescript
 orchflow
   .click('#process-button')
   .waitForAttribute('#status', 'data-status', 'complete')
   .execute();
-\`\`\`
-
-**Options:**
-- `timeout?: number` - Custom timeout
+```
 
 ---
 
 #### `assert(selector, options?)`
 
-Asserts that an element meets certain conditions. Throws an error if assertion fails.
+Asserts that an element meets certain conditions.
 
-\`\`\`typescript
+```typescript
 orchflow
   .assert('#success-message', { visible: true })
   .assert('#error-box', { exists: false })
   .assert('#title', { text: 'Welcome' })
   .execute();
-\`\`\`
+```
 
 **Options:**
-- `text?: string` - Assert element has exact text
-- `visible?: boolean` - Assert element is visible
-- `exists?: boolean` - Assert element exists (or doesn't exist if false)
-- `timeout?: number` - Custom timeout
+
+* `text?: string`
+* `visible?: boolean`
+* `exists?: boolean`
+* `timeout?: number`
 
 ---
 
@@ -273,13 +252,13 @@ orchflow
 
 Adds a delay between actions.
 
-\`\`\`typescript
+```typescript
 orchflow
   .click('#button')
   .delay(1000)
   .click('#next-button')
   .execute();
-\`\`\`
+```
 
 ---
 
@@ -287,17 +266,17 @@ orchflow
 
 Creates a conditional branch. Execute different actions based on a condition.
 
-\`\`\`typescript
+```typescript
 orchflow
   .if(() => document.querySelector('#premium-badge'))
   .do((orch) => orch.click('#premium-feature'))
   .else((orch) => orch.click('#upgrade-button'))
   .execute();
-\`\`\`
+```
 
-The condition can be synchronous or async:
+Async condition:
 
-\`\`\`typescript
+```typescript
 orchflow
   .if(async () => {
     const response = await fetch('/api/user');
@@ -307,25 +286,20 @@ orchflow
   .do((orch) => orch.click('#premium-action'))
   .else((orch) => orch.click('#free-action'))
   .execute();
-\`\`\`
+```
 
 ---
 
 ### Query Methods (Return Promises)
 
-These methods don't chain and return promises instead.
-
 #### `getText(selector, options?)`
 
 Gets the text content of an element.
 
-\`\`\`typescript
+```typescript
 const text = await orchflow.getText('#title');
 console.log(text); // "Welcome to our site"
-\`\`\`
-
-**Options:**
-- `timeout?: number` - Custom timeout
+```
 
 ---
 
@@ -333,13 +307,10 @@ console.log(text); // "Welcome to our site"
 
 Gets an attribute value from an element.
 
-\`\`\`typescript
+```typescript
 const href = await orchflow.getAttribute('a.link', 'href');
 const dataId = await orchflow.getAttribute('#item', 'data-id');
-\`\`\`
-
-**Options:**
-- `timeout?: number` - Custom timeout
+```
 
 ---
 
@@ -347,24 +318,16 @@ const dataId = await orchflow.getAttribute('#item', 'data-id');
 
 #### `execute()`
 
-Executes all queued actions in sequence. Returns an `ExecutionReport`.
+Executes all queued actions in sequence.
 
-\`\`\`typescript
+```typescript
 const report = await orchflow
   .click('#button')
   .fill('#input', 'text')
   .execute();
 
 console.log(report);
-// {
-//   totalDuration: 1234,
-//   success: true,
-//   steps: [
-//     { action: 'click', selector: '#button', duration: 100, status: 'success' },
-//     { action: 'fill', selector: '#input', duration: 50, status: 'success' }
-//   ]
-// }
-\`\`\`
+```
 
 ---
 
@@ -372,7 +335,7 @@ console.log(report);
 
 Stops execution immediately.
 
-\`\`\`typescript
+```typescript
 const orchflow = new Orchestrator();
 orchflow.click('#button').delay(5000).click('#next');
 
@@ -383,28 +346,28 @@ try {
 } catch (error) {
   console.log(error.message); // "Orchestration aborted"
 }
-\`\`\`
+```
 
 ---
 
 #### `getHistory()`
 
-Returns the execution history of all completed actions.
+Returns the execution history.
 
-\`\`\`typescript
+```typescript
 const history = orchflow.getHistory();
 history.forEach((step) => {
   console.log(`${step.action}: ${step.duration}ms - ${step.status}`);
 });
-\`\`\`
+```
 
 ---
 
-## Complete Examples
+## Examples
 
-### Example 1: Login Flow
+### 1️⃣ Login Flow
 
-\`\`\`typescript
+```typescript
 const orchflow = new Orchestrator({ debug: true });
 
 await orchflow
@@ -416,11 +379,11 @@ await orchflow
   .waitForVisible('#dashboard')
   .assert('#user-profile', { visible: true })
   .execute();
-\`\`\`
+```
 
-### Example 2: Form Submission with Validation
+### 2️⃣ Form Submission
 
-\`\`\`typescript
+```typescript
 const orchflow = new Orchestrator({ delayBetweenActions: 300 });
 
 await orchflow
@@ -432,11 +395,11 @@ await orchflow
   .click('#submit')
   .waitForText('Thank you for your submission')
   .execute();
-\`\`\`
+```
 
-### Example 3: Search and Filter
+### 3️⃣ Search and Filter
 
-\`\`\`typescript
+```typescript
 const orchflow = new Orchestrator();
 
 await orchflow
@@ -448,11 +411,11 @@ await orchflow
   .select('#price-range', '500-1000')
   .waitForText('Showing')
   .execute();
-\`\`\`
+```
 
-### Example 4: Dynamic Content with Retries
+### 4️⃣ Dynamic Content with Retries
 
-\`\`\`typescript
+```typescript
 const orchflow = new Orchestrator();
 
 await orchflow
@@ -463,11 +426,11 @@ await orchflow
   .click('#apply-filter')
   .assert('.results', { visible: true })
   .execute();
-\`\`\`
+```
 
-### Example 5: Conditional Actions
+### 5️⃣ Conditional Actions
 
-\`\`\`typescript
+```typescript
 const orchflow = new Orchestrator();
 
 await orchflow
@@ -477,11 +440,11 @@ await orchflow
   .do((orch) => orch.click('#retry').delay(1000))
   .else((orch) => orch.click('#continue'))
   .execute();
-\`\`\`
+```
 
-### Example 6: Multi-step Workflow with Assertions
+### 6️⃣ Multi-step Workflow with Assertions
 
-\`\`\`typescript
+```typescript
 const orchflow = new Orchestrator({ debug: true });
 
 const report = await orchflow
@@ -500,32 +463,27 @@ const report = await orchflow
 
 console.log(`Completed in ${report.totalDuration}ms`);
 console.log(`Steps: ${report.steps.length}`);
-\`\`\`
+```
 
-### Example 7: Extract Data
+### 7️⃣ Extract Data
 
-\`\`\`typescript
+```typescript
 const orchflow = new Orchestrator();
 
-// Queue actions
-orchflow
-  .click('#load-profile')
-  .waitForVisible('#profile-card');
+orchflow.click('#load-profile').waitForVisible('#profile-card');
 
-// Execute and get data
 await orchflow.execute();
 
-// Extract data after execution
 const name = await orchflow.getText('#profile-name');
 const email = await orchflow.getAttribute('#profile-email', 'data-email');
 const userId = await orchflow.getAttribute('#profile', 'data-id');
 
 console.log({ name, email, userId });
-\`\`\`
+```
 
-### Example 8: Error Handling
+### 8️⃣ Error Handling
 
-\`\`\`typescript
+```typescript
 const orchflow = new Orchestrator();
 
 try {
@@ -537,29 +495,29 @@ try {
   console.error('Automation failed:', error.message);
   
   const history = orchflow.getHistory();
-  const failedStep = history.find((step) => step.status === 'error');
+  const failedStep = history.find((s) => s.status === 'error');
   console.error('Failed at:', failedStep?.action, failedStep?.error);
 }
-\`\`\`
+```
 
 ---
 
 ## Best Practices
 
-1. **Use specific selectors** - Prefer IDs over classes for reliability
-2. **Add delays for animations** - Use `delay()` or `delayBetweenActions` for smooth transitions
-3. **Wait for visibility** - Use `waitForVisible()` instead of just `waitFor()` when possible
-4. **Enable debug mode during development** - Helps troubleshoot issues
-5. **Use assertions** - Verify expected state at key points
-6. **Handle errors gracefully** - Wrap `execute()` in try-catch
-7. **Set appropriate timeouts** - Longer timeouts for slow operations
-8. **Use retry for flaky operations** - Especially useful for network-dependent actions
+1. ✅ Use specific selectors (`#id` > `.class`)
+2. 🕐 Add delays for animations
+3. 👀 Prefer `waitForVisible()` over `waitFor()`
+4. 🧩 Enable `debug: true` in development
+5. ✅ Use assertions for validation
+6. 🚫 Wrap `execute()` in try/catch
+7. ⏱️ Adjust timeouts for slower operations
+8. 🔁 Use retries for flaky actions
 
 ---
 
 ## Types
 
-\`\`\`typescript
+```typescript
 interface ExecutionStep {
   action: string;
   selector?: string;
@@ -582,10 +540,5 @@ interface OrchestratorConfig {
   debug?: boolean;              // Default: false
   delayBetweenActions?: number; // Default: 0ms
 }
-\`\`\`
+```
 
----
-
-## License
-
-MIT
