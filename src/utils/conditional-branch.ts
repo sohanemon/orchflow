@@ -1,32 +1,31 @@
-import { Orchestrator } from "./orchestrator";
+import { Orchflow } from "./orchestrator";
 
 export class ConditionalBranch {
-	private orchestrator: Orchestrator;
+	private orchestrator: Orchflow;
 	private condition: () => boolean | Promise<boolean>;
 	private thenActions: Array<() => Promise<void>> = [];
 	private elseActions: Array<() => Promise<void>> = [];
 
 	constructor(
-		orchestrator: Orchestrator,
+		orchestrator: Orchflow,
 		condition: () => boolean | Promise<boolean>,
 	) {
 		this.orchestrator = orchestrator;
 		this.condition = condition;
 	}
 
-	do(callback: (orch: Orchestrator) => Orchestrator): this {
-		const tempOrch = new Orchestrator();
+	do(callback: (orch: Orchflow) => Orchflow): this {
+		const tempOrch = new Orchflow();
 		callback(tempOrch);
 		this.thenActions = tempOrch.getActions();
 		return this;
 	}
 
-	else(callback: (orch: Orchestrator) => Orchestrator): Orchestrator {
-		const tempOrch = new Orchestrator();
+	else(callback: (orch: Orchflow) => Orchflow): Orchflow {
+		const tempOrch = new Orchflow();
 		callback(tempOrch);
 		this.elseActions = tempOrch.getActions();
 
-		// Add conditional execution to main orchestrator
 		this.orchestrator.getActions().push(async () => {
 			const conditionResult = await Promise.resolve(this.condition());
 

@@ -17,19 +17,19 @@ export interface ExecutionReport {
 	error?: string;
 }
 
-export interface OrchestratorConfig {
+export interface OrchflowConfig {
 	defaultTimeout?: number;
 	debug?: boolean;
 	delayBetweenActions?: number;
 }
 
-export class Orchestrator {
+export class Orchflow {
 	protected actions: Array<() => Promise<void>> = [];
 	private executionSteps: ExecutionStep[] = [];
-	private config: OrchestratorConfig;
+	private config: OrchflowConfig;
 	private abortController: AbortController = new AbortController();
 
-	constructor(config: OrchestratorConfig = {}) {
+	constructor(config: OrchflowConfig = {}) {
 		this.config = {
 			defaultTimeout: 15000,
 			debug: false,
@@ -48,7 +48,7 @@ export class Orchestrator {
 		try {
 			if (this.config.debug) {
 				console.log(
-					`[Orchestrator] Executing: ${action}${selector ? ` (${selector})` : ""}`,
+					`[Orchflow] Executing: ${action}${selector ? ` (${selector})` : ""}`,
 				);
 			}
 
@@ -66,7 +66,7 @@ export class Orchestrator {
 
 			if (this.config.debug) {
 				console.log(
-					`[Orchestrator] ✓ ${action} completed in ${duration.toFixed(2)}ms`,
+					`[Orchflow] ✓ ${action} completed in ${duration.toFixed(2)}ms`,
 				);
 			}
 
@@ -92,7 +92,7 @@ export class Orchestrator {
 				});
 
 			if (this.config.debug) {
-				console.error(`[Orchestrator] ✗ ${action} failed: ${errorMessage}`);
+				console.error(`[Orchflow] ✗ ${action} failed: ${errorMessage}`);
 			}
 
 			throw error;
@@ -119,7 +119,7 @@ export class Orchestrator {
 					}
 				} catch (error) {
 					if (this.config.debug) {
-						console.debug("[Orchestrator] Condition check error:", error);
+						console.debug("[Orchflow] Condition check error:", error);
 					}
 				}
 
@@ -611,7 +611,7 @@ export class Orchestrator {
 			};
 
 			if (this.config.debug) {
-				console.log("[Orchestrator] Execution completed successfully", report);
+				console.log("[Orchflow] Execution completed successfully", report);
 			}
 
 			return report;
@@ -628,7 +628,7 @@ export class Orchestrator {
 			};
 
 			if (this.config.debug) {
-				console.error("[Orchestrator] Execution failed", report);
+				console.error("[Orchflow] Execution failed", report);
 			}
 
 			throw error;

@@ -5,7 +5,10 @@ export function App() {
 	return (
 		<button
 			onClick={() => {
-				execute((o) => o);
+				// execute((o) => o.getAttribute("es", "es"));
+				execute(function (o) {
+					return o.getText("s");
+				});
 			}}
 			type="button"
 		>

@@ -3,22 +3,22 @@
 import * as React from "react";
 import {
 	type ExecutionReport,
-	Orchestrator,
-	type OrchestratorConfig,
+	Orchflow,
+	type OrchflowConfig,
 } from "../utils/orchestrator";
 
-export function useOrchflow(config?: OrchestratorConfig) {
+export function useOrchflow(config?: OrchflowConfig) {
 	const [isExecuting, setIsExecuting] = React.useState(false);
 	const [report, setReport] = React.useState<ExecutionReport | null>(null);
 	const [error, setError] = React.useState<string | null>(null);
 
 	const execute = React.useCallback(
-		async (callback: (orch: Orchestrator) => Orchestrator) => {
+		async (callback: (orch: Orchflow) => Orchflow) => {
 			setIsExecuting(true);
 			setError(null);
 
 			try {
-				const orchestrator = new Orchestrator(config);
+				const orchestrator = new Orchflow(config);
 				const chainedOrch = callback(orchestrator);
 				const executionReport = await chainedOrch.execute();
 
